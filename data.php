@@ -1,11 +1,11 @@
 <?php
 
-$data = explode("\n", trim(file_get_contents("data.txt")));
+$temp = explode("\n", trim(file_get_contents("data.txt")));
 $years = range(2002, 2015);
 
 $all_values = array();
 
-foreach( $data as $k => $v ) {
+foreach( $temp as $k => $v ) {
 	$t = explode(",", $v );
 
     # pull out country name
@@ -21,7 +21,7 @@ foreach( $data as $k => $v ) {
 	foreach( $t as $k2 => $v2 ) {
         $point = array(
             "year" => $years[$k2],
-            "count" => trim($t[$k2]),
+            "count" => intval(trim($t[$k2])),
         );
 
         $y[] = $point;
@@ -30,11 +30,12 @@ foreach( $data as $k => $v ) {
 	}
 
     # and add some aggregates
-	$data[$k] = array(
+	$temp[$k] = array(
 		"country" => $c,
-        "placement" => $y,
-        "total" => array_sum($t),
-        "max" => max($t),
-        "min" => min($t)
+        "placement" => $y
 	);
 }
+
+$data = $temp;
+
+# echo "<PRE>";print_r( $data ); die;
