@@ -46,19 +46,22 @@ var data_usa = {
 // borrowed from raphaeljs polar clock sample, modified to match this chart
 // ===========================================================================
 paper.customAttributes.arc = function(value, total, R, anchor_x, anchor_y) {
-    var alpha = 360 / total * value,
-        a = (90 - alpha) * Math.PI / 180,
-        x = anchor_x + R * Math.cos(a),
-        y = anchor_y - R * Math.sin(a),
-        color = "hsb(".concat(Math.round(R) / 200, ",", value / total, ", .75)"),
-        path;
+    var alpha = 360 / total * value;
+
+    var a = (90 - alpha) * Math.PI / 180;
+    var x = anchor_x + R * Math.cos(a);
+    var y = anchor_y - R * Math.sin(a);
+    var path;
+
+        // color = "hsb(".concat(Math.round(R) / 200, ",", value / total, ", .75)"), path;
+        // console.info( color );
     if (total == value) {
         path = [["M", anchor_x, anchor_y - R], ["A", R, R, 0, 1, 1, anchor_x-0.01, anchor_y - R]];
     } else {
         path = [["M", anchor_x, anchor_y - R], ["A", R, R, 0, +(alpha > 180), 1, x, y]];
     }
 
-    return {path: path, stroke: color};
+    return {path: path };
 };
 
 // ===========================================================================
@@ -97,7 +100,7 @@ function chart() {
 
     this.styles = {
         block: {
-            on: { "stroke-width": 1, "fill": "crimson", "stroke": "crimson", "cursor": "auto" },
+            on: { "stroke-width": 1, "fill": "#677f70", "stroke": "gray", "cursor": "auto" },
             off: { "stroke-width": 1, "fill": "silver", "stroke": "gray", "cursor": "pointer" }
         },
         labels: {
@@ -105,9 +108,12 @@ function chart() {
             selected_country: { "font-family": "Times New Roman", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "black" },
             selected_country_counts: { "font-family": "Times New Roman", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "gray" }
         },
-        chart_arc: { stroke: "#ce0000", "stroke-width": 10 },
+        chart_arc: { stroke: "#9bbfa9", "stroke-width": 10 },
+        chart_arc_az: { stroke: "#677f70", "stroke-width": 10 },
         chart_arc_on: { stroke: "#00ce00", "stroke-width": 10 },
-        chart_arc_label: { "font-family": "Times New Roman", "font-size": "14", "fill": "gray" }
+        chart_arc_label: { "font-family": "Times New Roman", "font-size": "14", "fill": "gray" },
+        chart_arc_label_important: { "font-family": "Times New Roman", "font-size": "14", "fill": "black", "font-weight": "bold" },
+        chart_arc_label_arc: { "font-family": "Times New Roman", "font-size": "14", "fill": "gray" }
     };
 }
 
@@ -350,6 +356,7 @@ chart.prototype.plotLabels = function() {
     this.e.selected_country_counts2.attr( this.styles.labels.selected_country_counts );
 
     // arizona compared to rest of the country
+
     var radius = 80;
 
     this.e.arcs = [];
@@ -357,10 +364,14 @@ chart.prototype.plotLabels = function() {
     var anchor_x = 125;
     var anchor_y = 100;
 
-    for( var i = 0; i < data_usa.top_states.length; i++) {
-        var temp = paper.path().attr(this.styles.chart_arc);
+    this.e.arc_center_label = paper.text(anchor_x, anchor_y, "");
+    this.e.arc_center_label.attr( this.styles.chart_arc_label_arc );
 
-        var a = data_usa.top_states[i].individuals;
+    for( var i = 0; i < data_usa.top_states.length; i++)(function(point, i) {
+
+        var temp = paper.path().attr(that.styles.chart_arc);
+
+        var a = point.individuals;
         var b = data_usa.total.top_states;
         var c = (a / b) * 100;
         var d = (360 * c) / 100;
@@ -375,18 +386,43 @@ chart.prototype.plotLabels = function() {
         delta += (d );
 
         var b = temp.getBBox();
-        paper.text(b.cx, b.cy, data_usa.top_states[i].state ).attr(this.styles.chart_arc_label);
+        var temp2 = paper.text(b.cx, b.cy, point.state );
 
-        var data = data_usa.top_states[i];
+        temp2.attr(that.styles.chart_arc_label);
+        if( i == 6 ) {
+            temp2.attr(that.styles.chart_arc_label_important);
+            temp.attr(that.styles.chart_arc_az);
+        }
+
+        var data = point;
+        /*
         temp.mouseover(function() {
             this.attr(that.styles.chart_arc_on);
         });
         temp.mouseout(function() {
             this.attr(that.styles.chart_arc);
+        });*/
+
+        var temp3 = paper.set();
+        temp3.push( temp );
+        temp3.push( temp2 );
+
+        temp3.mouseover(function() {
+            temp.attr(that.styles.chart_arc_on);
+            that.e.arc_center_label.attr("text", that.comma(point.individuals)  + "\nRefugees" );
+        }).mouseout(function() {
+            if( i == 6 ) {
+                temp.attr(that.styles.chart_arc_az);
+            } else {
+                temp.attr(that.styles.chart_arc);
+            }
+            that.e.arc_center_label.attr("text", "" );
         });
 
-        this.e.arcs.push(temp);
-    }
+        that.e.arcs.push(temp);
+
+    })(data_usa.top_states[i], i);
+
     /*
     this.e.circle_state = paper.path().attr( this.styles.chart_arc );
     this.e.circle_state.attr({arc: [10, 100, radius, 100, 100]});
