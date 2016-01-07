@@ -8,6 +8,7 @@ body, html { width:100%; height:100%; padding:0; margin:0; overflow: hidden; bac
 #chart_div { width:<?php echo $canvas_w ?>px; height: <?php echo $canvas_h ?>px; background-color: white }
 </style>
 <script src="raphael-min.js"></script>
+<script src="scale.raphael.js"></script>
 <script src="rainbowvis.js"></script>
 </head>
 <body>
@@ -20,7 +21,28 @@ var chart_w = <?php echo $canvas_w ?>;
 var chart_h = <?php echo $canvas_h ?>;
 
 // canvas
-var paper = Raphael("chart_div", chart_w, chart_h);
+// var paper = Raphael("chart_div", chart_w, chart_h);
+var paper = ScaleRaphael("chart_div", chart_w, chart_h);
+paper.changeSize(chart_w, chart_h, false, false );// [,center=true, clipping=false])
+
+var windowAddEvent = window.attachEvent || window.addEventListener;
+
+// thanks, scaleraphael!
+function resizePaper(){
+   var w = 0, h = 0;
+   if(window.innerWidth) {
+      w = window.innerWidth;
+      h = window.innerHeight;
+   }else if(document.documentElement &&
+           (document.documentElement.clientWidth ||
+            document.documentElement.clientHeight)) {
+            w = document.documentElement.clientWidth;
+            h = document.documentElement.clientHeight;
+   }
+   paper.changeSize(w, h, true, false);
+}
+resizePaper();
+windowAddEvent("resize", resizePaper, false);
 
 // data points
 var data = <?php echo json_encode($data); ?>;
@@ -108,9 +130,9 @@ function chart() {
             selected_country: { "font-family": "Times New Roman", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "black" },
             selected_country_counts: { "font-family": "Times New Roman", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "gray" }
         },
-        chart_arc: { stroke: "#9bbfa9", "stroke-width": 10 },
-        chart_arc_az: { stroke: "#677f70", "stroke-width": 10 },
-        chart_arc_on: { stroke: "#00ce00", "stroke-width": 10 },
+        chart_arc: { stroke: "#9bbfa9", "stroke-width": 20 },
+        chart_arc_az: { stroke: "#677f70", "stroke-width": 20 },
+        chart_arc_on: { stroke: "#00ce00", "stroke-width": 20 },
         chart_arc_label: { "font-family": "Times New Roman", "font-size": "14", "fill": "gray" },
         chart_arc_label_important: { "font-family": "Times New Roman", "font-size": "14", "fill": "black", "font-weight": "bold" },
         chart_arc_label_arc: { "font-family": "Times New Roman", "font-size": "14", "fill": "gray" }
@@ -509,7 +531,7 @@ var arizona = new chart();
 arizona.setWidth(chart_w);
 arizona.setHeight(chart_h);
 arizona.setPadding({
-    top: 40, bottom: 40, left: 10, right: 10
+    top: 10, bottom: 40, left: 10, right: 10
 });
 
 for( var i = 0; i < data.length; i++ ) {
