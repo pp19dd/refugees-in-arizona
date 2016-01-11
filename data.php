@@ -38,4 +38,21 @@ foreach( $temp as $k => $v ) {
 
 $data = $temp;
 
-# echo "<PRE>";print_r( $data ); die;
+function get_sum($placement) {
+	$c = 0;
+	foreach( $placement as $v ) {
+		$c += $v["count"];
+	}
+	return( $c );
+}
+
+usort($data, function($a, $b) {
+	$sum_a = get_sum($a["placement"]);
+	$sum_b = get_sum($b["placement"]);
+
+	if( $sum_a === $sum_b ) return(0);
+	if( $sum_a > $sum_b ) return(1);
+	return(-1);
+});
+
+#echo "<PRE>";print_r( $data ); die;

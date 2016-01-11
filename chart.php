@@ -3,9 +3,15 @@
 <head>
 <title>Refugees in Arizona 2002-2015</title>
 <style>
-body, html { width:100%; height:100%; padding:0; margin:0; overflow: hidden; background-color: white }
+body, html { width:100%; height:100%; padding:0; margin:0; overflow: hidden; background-color: silver }
 .container { /* padding: 25px */ }
-#chart_div { width:<?php echo $canvas_w ?>px; height: <?php echo $canvas_h ?>px; background-color: white }
+#chart_div { background-color: white }
+
+/*
+@media screen and (max-width:700px) {
+    svg tspan { font-size:20px }
+}
+*/
 </style>
 <script src="raphael-min.js"></script>
 <script src="scale.raphael.js"></script>
@@ -21,28 +27,10 @@ var chart_w = <?php echo $canvas_w ?>;
 var chart_h = <?php echo $canvas_h ?>;
 
 // canvas
-// var paper = Raphael("chart_div", chart_w, chart_h);
-var paper = ScaleRaphael("chart_div", chart_w, chart_h);
-paper.changeSize(chart_w, chart_h, false, false );// [,center=true, clipping=false])
+var paper = Raphael("chart_div", chart_w, chart_h);
+// var paper = ScaleRaphael("chart_div", chart_w, chart_h);
+// paper.changeSize(chart_w, chart_h, false, false );// [,center=true, clipping=false])
 
-var windowAddEvent = window.attachEvent || window.addEventListener;
-
-// thanks, scaleraphael!
-function resizePaper(){
-   var w = 0, h = 0;
-   if(window.innerWidth) {
-      w = window.innerWidth;
-      h = window.innerHeight;
-   }else if(document.documentElement &&
-           (document.documentElement.clientWidth ||
-            document.documentElement.clientHeight)) {
-            w = document.documentElement.clientWidth;
-            h = document.documentElement.clientHeight;
-   }
-   paper.changeSize(w, h, true, false);
-}
-resizePaper();
-windowAddEvent("resize", resizePaper, false);
 
 // data points
 var data = <?php echo json_encode($data); ?>;
@@ -76,7 +64,6 @@ paper.customAttributes.arc = function(value, total, R, anchor_x, anchor_y) {
     var path;
 
         // color = "hsb(".concat(Math.round(R) / 200, ",", value / total, ", .75)"), path;
-        // console.info( color );
     if (total == value) {
         path = [["M", anchor_x, anchor_y - R], ["A", R, R, 0, 1, 1, anchor_x-0.01, anchor_y - R]];
     } else {
@@ -93,7 +80,11 @@ function chart() {
     this.xy = {};
 
     // misc raphaeljs objects
-    this.e = {};
+    this.e = {
+        arcs: [],
+        labels: {},
+        blocks: []
+    };
 
     // ranges
     this.range_x = {};
@@ -109,6 +100,9 @@ function chart() {
     // defaults: required
     this.width = 0;
     this.height = 0;
+
+    this.new_width = 0;
+    this.new_height = 0;
 
     this.padding = {
         top: 0,
@@ -126,16 +120,16 @@ function chart() {
             off: { "stroke-width": 1, "fill": "silver", "stroke": "gray", "cursor": "pointer" }
         },
         labels: {
-            years: { "font-family": "Times New Roman", "font-size": "15", "font-weight": "bold", "fill": "black" },
-            selected_country: { "font-family": "Times New Roman", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "black" },
-            selected_country_counts: { "font-family": "Times New Roman", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "gray" }
+            years: { "font-family": "Arial", "font-size": "15", "font-weight": "bold", "fill": "black" },
+            selected_country: { "font-family": "Arial", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "black" },
+            selected_country_counts: { "font-family": "Arial", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "gray" }
         },
         chart_arc: { stroke: "#9bbfa9", "stroke-width": 20 },
         chart_arc_az: { stroke: "#677f70", "stroke-width": 20 },
         chart_arc_on: { stroke: "#00ce00", "stroke-width": 20 },
-        chart_arc_label: { "font-family": "Times New Roman", "font-size": "14", "fill": "gray" },
-        chart_arc_label_important: { "font-family": "Times New Roman", "font-size": "14", "fill": "black", "font-weight": "bold" },
-        chart_arc_label_arc: { "font-family": "Times New Roman", "font-size": "14", "fill": "gray" }
+        chart_arc_label: { "font-family": "Arial", "font-size": "14", "fill": "gray" },
+        chart_arc_label_important: { "font-family": "Arial", "font-size": "14", "fill": "black", "font-weight": "bold" },
+        chart_arc_label_arc: { "font-family": "Arial", "font-size": "14", "fill": "gray" }
     };
 }
 
@@ -245,6 +239,23 @@ chart.prototype.countFromCountry = function(country) {
     return( count );
 }
 
+chart.prototype.displayCountryText = function(point) {
+    this.e.labels.selected_country.attr("text", point.country);
+    this.e.labels.selected_country.toFront().show();
+
+    var delim = " ";
+    if( this.new_width < 710 ) {
+        delim = "\n";
+    }
+
+    this.e.labels.selected_country_counts.attr("text", this.comma(point.count) + " refugees admitted" + delim + "to Arizona in " + point.year);
+    this.e.labels.selected_country_counts.toFront().show();
+
+    this.e.labels.selected_country_counts2.attr("text", this.comma(this.countFromCountry(point.country)) + " refugees admitted" + delim + "2002-2015");
+    this.e.labels.selected_country_counts2.toFront().show();
+
+}
+
 // given a year, country, count, plot it somewhere
 chart.prototype.plotBlock = function(point) {
 
@@ -272,33 +283,29 @@ chart.prototype.plotBlock = function(point) {
     e.attr( this.styles.block.off );
 
     var that = this;
+
     e.mouseover(function() {
         if( that.busy === true ) return;
 
-        that.e.selected_country.attr("text", point.country);
-        that.e.selected_country.show();
-
-        that.e.selected_country_counts.attr("text", that.comma(point.count) + " refugees admitted to Arizona in " + point.year);
-        that.e.selected_country_counts.show();
-
-        that.e.selected_country_counts2.attr("text", that.comma(that.countFromCountry(point.country)) + " refugees admitted 2002-2015");
-        that.e.selected_country_counts2.show();
+        that.displayCountryText(point);
 
         var x = that.filterCountry(point.country);
         for( var i = 0; i < x.length; i++ ) {
             // x[i].e.attr({fill: "crimson", stroke: "crimson"});
             // x[i].e.toFront().stop().animate({fill: "orange", stroke: "orange"}, 300, "<>");
-            x[i].e.toFront().stop().animate(that.styles.block.on, 300, "<>");
+
+            // ie toFront() - mouseout bug?
+            // x[i].e.toFront().stop().animate(that.styles.block.on, 300, "<>");
+            x[i].e.stop().animate(that.styles.block.on, 300, "<>");
         }
     });
 
     e.mouseout(function() {
         if( that.busy === true ) return;
 
-        that.e.selected_country.hide();
-        that.e.selected_country_counts.hide();
-        that.e.selected_country_counts2.hide();
-
+        that.e.labels.selected_country.hide();
+        that.e.labels.selected_country_counts.hide();
+        that.e.labels.selected_country_counts2.hide();
         var x = that.filterCountry(point.country);
         for( var i = 0; i < x.length; i++ ) {
             // x[i].e.attr({fill: "white", stroke: "black"});
@@ -312,9 +319,9 @@ chart.prototype.plotBlock = function(point) {
 
         // experimental event
         that.sortYearsByCountry(point.country, function() {
-            that.e.selected_country.hide();
-            that.e.selected_country_counts.hide();
-            that.e.selected_country_counts2.hide();
+            that.e.labels.selected_country.hide();
+            that.e.labels.selected_country_counts.hide();
+            that.e.labels.selected_country_counts2.hide();
 
             var x = that.filterCountry(point.country);
             for( var i = 0; i < x.length; i++ ) {
@@ -323,7 +330,7 @@ chart.prototype.plotBlock = function(point) {
                 x[i].e.stop().animate(that.styles.block.off, 100, "<>");
             }
         });
-    })
+    });
     //e.attr({ opacity: 0});
 
     //var x = Raphael.animation( { opacity: 1 }, 300);
@@ -333,13 +340,31 @@ chart.prototype.plotBlock = function(point) {
     point.e = e;
     //e.attr({ fill: "#" + this.rainbow.colourAt(point.count) } );
 
-
+    this.storeOriginalGeometryBlock(e);
+    this.e.blocks.push(e);
 }
 
 chart.prototype.plotAll = function() {
     for( var cursor in this.xy ) {
         this.plotBlock(this.xy[cursor]);
     }
+}
+
+chart.prototype.storeOriginalGeometryBlock = function(block) {
+    block.__geometry = {
+        ox: block.attr("x"),
+        oy: block.attr("y"),
+        ow: block.attr("width"),
+        oh: block.attr("height")
+    }
+}
+
+chart.prototype.storeOriginalGeometryLabel = function(label, type) {
+    label.__geometry = {
+        ox: label.attr("x"),
+        oy: label.attr("y")
+    }
+    label.__type = type;
 }
 
 chart.prototype.plotLabels = function() {
@@ -364,20 +389,29 @@ chart.prototype.plotLabels = function() {
         var x = this.padding.left + (w * i);
         var y = bottom + 20;
 
-        paper.text( x + (w/2), y, year ).attr(this.styles.labels.years);
-
+        this.e.labels["year_" + year] = paper.text( x + (w/2), y, year ).attr(this.styles.labels.years);
+        this.storeOriginalGeometryLabel(this.e.labels["year_" + year], "year");
+        this.e.labels["year_" + year].__year = year;
     }
 
-    this.e.selected_country = paper.text(rightmost, this.padding.top, "");
-    this.e.selected_country.attr( this.styles.labels.selected_country );
+    this.e.labels.selected_country = paper.text(rightmost, this.padding.top, "");
+    this.e.labels.selected_country.attr( this.styles.labels.selected_country );
+    this.storeOriginalGeometryLabel(this.e.labels.selected_country, "country");
 
-    this.e.selected_country_counts = paper.text(rightmost, this.padding.top + 30, "");
-    this.e.selected_country_counts.attr( this.styles.labels.selected_country_counts );
+    this.e.labels.selected_country_counts = paper.text(rightmost, this.padding.top + 30, "");
+    this.e.labels.selected_country_counts.attr( this.styles.labels.selected_country_counts );
+    this.storeOriginalGeometryLabel(this.e.labels.selected_country_counts, "country");
 
-    this.e.selected_country_counts2 = paper.text(rightmost, this.padding.top + 60, "");
-    this.e.selected_country_counts2.attr( this.styles.labels.selected_country_counts );
+    this.e.labels.selected_country_counts2 = paper.text(rightmost, this.padding.top + 60, "");
+    this.e.labels.selected_country_counts2.attr( this.styles.labels.selected_country_counts );
+    this.storeOriginalGeometryLabel(this.e.labels.selected_country_counts2, "country");
 
-    // arizona compared to rest of the country
+}
+
+// arizona compared to rest of the country
+chart.prototype.plotArizona = function() {
+
+    var that = this;
 
     var radius = 80;
 
@@ -386,8 +420,9 @@ chart.prototype.plotLabels = function() {
     var anchor_x = 125;
     var anchor_y = 100;
 
-    this.e.arc_center_label = paper.text(anchor_x, anchor_y, "");
-    this.e.arc_center_label.attr( this.styles.chart_arc_label_arc );
+    this.e.labels.arc_center_label = paper.text(anchor_x, anchor_y, "");
+    this.e.labels.arc_center_label.attr( this.styles.chart_arc_label_arc );
+    this.storeOriginalGeometryLabel(this.e.labels.arc_center_label, "arc");
 
     for( var i = 0; i < data_usa.top_states.length; i++)(function(point, i) {
 
@@ -431,14 +466,14 @@ chart.prototype.plotLabels = function() {
 
         temp3.mouseover(function() {
             temp.attr(that.styles.chart_arc_on);
-            that.e.arc_center_label.attr("text", that.comma(point.individuals)  + "\nRefugees" );
+            that.e.labels.arc_center_label.attr("text", that.comma(point.individuals)  + "\nRefugees" );
         }).mouseout(function() {
             if( i == 6 ) {
                 temp.attr(that.styles.chart_arc_az);
             } else {
                 temp.attr(that.styles.chart_arc);
             }
-            that.e.arc_center_label.attr("text", "" );
+            that.e.labels.arc_center_label.attr("text", "" );
         });
 
         that.e.arcs.push(temp);
@@ -500,6 +535,7 @@ chart.prototype.sortYearsBySize = function() {
     }
 }
 
+// mod: account for scaling
 chart.prototype.sortYearsByCountry = function(country, after_animation) {
     var that = this;
 
@@ -518,13 +554,71 @@ chart.prototype.sortYearsByCountry = function(country, after_animation) {
 
             that.busy = true;
             // sorted[b].e.attr("y", this.height - this.padding.bottom - offset - temp_h);
-            sorted[b].e.animate({ y: this.height - this.padding.bottom - offset - temp_h}, 300, "<>", function() {
+            // sorted[b].e.animate({ y: this.height - this.padding.bottom - offset - temp_h}, 300, "<>", function() {
+            var new_y = that.doResizeHelper(this.height - this.padding.bottom - offset - temp_h, this.height, this.new_height);
+            // this.storeOriginalGeometryBlock(sorted[b].e);
+
+            sorted[b].e.animate({ y: new_y}, 300, "<>", function() {
                 that.busy = false;
                 after_animation();
             });
             offset += temp_h;
         }
     }
+}
+
+chart.prototype.doResizeHelper = function(x, x1, x2, p) {
+    return((x * x2) / x1);
+}
+
+// resize blocks, labels and arcs
+chart.prototype.doResize = function(w, h) {
+
+    // optimization: resize already done, event misfire
+    if( this.new_width === w && this.new_height === h ) {
+        return;
+    }
+
+    // resize raphael canvas
+    paper.setSize(w,h);
+
+    // scaling helper
+    // function ns(x,x1,x2, p) {
+    //     return((x * x2) / x1);
+    // }
+
+    var that = this;
+
+    // blocks
+    for( var i = 0; i < this.e.blocks.length; i++ )(function(block) {
+        block.attr({
+            x: that.doResizeHelper(block.__geometry.ox, that.width, w),//x: (w * 500) / block.__geometry.ox,
+            y: that.doResizeHelper(block.__geometry.oy, that.height, h, "block"),
+            width: that.doResizeHelper(block.__geometry.ow, that.width, w),
+            height: that.doResizeHelper(block.__geometry.oh, that.height, h, "block")
+        });
+    })(this.e.blocks[i]);
+
+    for( var s in this.e.labels)(function(label) {
+        //     label.hide();
+        // } else {
+        //     label.show();
+
+        label.attr({
+            x: that.doResizeHelper(label.__geometry.ox, that.width, w),
+            y: that.doResizeHelper(label.__geometry.oy, that.height, h)
+        })
+
+        if( (w < 550 && label.__type == "year") ) {//} && label.__year % 2 ) {
+            label.attr({"transform": "r-90"});
+        } else {
+            label.attr({"transform": "r0"});
+        }
+    })(this.e.labels[s]);
+
+    // for reference
+    this.new_width = w;
+    this.new_height = h;
 }
 
 var arizona = new chart();
@@ -552,7 +646,33 @@ arizona.computeMax();
 arizona.computeGradient();
 arizona.plotAll();
 arizona.plotLabels();
-arizona.sortYearsBySize();
+arizona.plotArizona();
+
+// pre-sorted in the datastream
+// arizona.sortYearsBySize();
+
+var windowAddEvent = window.attachEvent || window.addEventListener;
+
+// thanks, scaleraphael!
+function resizePaper(){
+    var w = 0, h = 0;
+    if(window.innerWidth) {
+        w = window.innerWidth;
+        h = window.innerHeight;
+    }else if(document.documentElement &&
+       (document.documentElement.clientWidth ||
+        document.documentElement.clientHeight)) {
+        w = document.documentElement.clientWidth;
+        h = document.documentElement.clientHeight;
+    }
+    // paper.changeSize(w, h, true, false);
+
+    arizona.doResize(w,h);
+    //arizona.plotAll();
+}
+resizePaper();
+windowAddEvent("resize", resizePaper, false);
+
 
 
 </script>
