@@ -176,9 +176,37 @@ chart.prototype.computeMax = function() {
 }
 
 chart.prototype.computeGradient = function() {
-    this.rainbow = new Rainbow();
-    this.rainbow.setNumberRange(0, this.max_x);
-    this.rainbow.setSpectrum("#ff0000", "#000000");
+    // this.rainbow = new Rainbow();
+    // this.rainbow.setNumberRange(0, this.max_x);
+    // this.rainbow.setSpectrum("#ff0000", "#000000");
+    var that = this;
+
+    var counter = 0;
+
+    var available_colors = [
+        "#FF1873", "#0DFFF2", "#FFCD19", "#A757AB", "#7CFF82", "#FF5D51", "#38C6E2",
+        "#EBFF13", "#37FFC7"
+    ];
+
+    for( var country in this.range_y )(function(country, data, counter) {
+        var rainbow = new Rainbow();
+        rainbow.setNumberRange(0, data.max);
+
+        // todo: add 62 more color ranges
+        if( typeof available_colors[63-counter] == "undefined" ) {
+            rainbow.setSpectrum("#000000", "#ff0000");
+        } else {
+            rainbow.setSpectrum("#000000", available_colors[63-counter]);
+        }
+
+        var country_blocks = that.filterCountry(country);
+        for( var i = 0; i < country_blocks.length; i++) {
+            // console.info( country_blocks[i]);
+            country_blocks[i].e.attr({ "fill": "#" + rainbow.colorAt(country_blocks[i].count) });
+        }
+        //console.info( country );
+
+    })(country, this.range_y[country], counter++);
 }
 
 chart.prototype.add = function(country, year, count) {
@@ -643,10 +671,10 @@ for( var i = 0; i < data.length; i++ ) {
 }
 
 arizona.computeMax();
-arizona.computeGradient();
 arizona.plotAll();
 arizona.plotLabels();
 arizona.plotArizona();
+arizona.computeGradient();
 
 // pre-sorted in the datastream
 // arizona.sortYearsBySize();
