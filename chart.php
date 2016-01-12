@@ -83,6 +83,7 @@ function chart() {
     this.e = {
         arcs: [],
         labels: {},
+        arclabels: {},
         blocks: []
     };
 
@@ -448,11 +449,11 @@ chart.prototype.plotLabels = function() {
     this.e.labels.selected_country.attr( this.styles.labels.selected_country );
     this.storeOriginalGeometryLabel(this.e.labels.selected_country, "country");
 
-    this.e.labels.selected_country_counts = paper.text(rightmost, this.padding.top + 30, "");
+    this.e.labels.selected_country_counts = paper.text(rightmost, this.padding.top + 40, "");
     this.e.labels.selected_country_counts.attr( this.styles.labels.selected_country_counts );
     this.storeOriginalGeometryLabel(this.e.labels.selected_country_counts, "country");
 
-    this.e.labels.selected_country_counts2 = paper.text(rightmost, this.padding.top + 60, "");
+    this.e.labels.selected_country_counts2 = paper.text(rightmost, this.padding.top + 90, "");
     this.e.labels.selected_country_counts2.attr( this.styles.labels.selected_country_counts );
     this.storeOriginalGeometryLabel(this.e.labels.selected_country_counts2, "country");
 
@@ -470,7 +471,7 @@ chart.prototype.plotArizona = function() {
     var anchor_x = 125;
     var anchor_y = 100;
 
-    this.e.labels.arc_center_label = paper.text(anchor_x, anchor_y, "");
+    this.e.labels.arc_center_label = paper.text(anchor_x + 45, anchor_y, "");
     this.e.labels.arc_center_label.attr( this.styles.chart_arc_label_arc );
     this.storeOriginalGeometryLabel(this.e.labels.arc_center_label, "arc");
 
@@ -501,6 +502,8 @@ chart.prototype.plotArizona = function() {
         }
 
         var data = point;
+
+        that.e.arclabels[point.state] = temp2;
 
         var temp3 = paper.set();
         temp3.push( temp );
@@ -604,6 +607,22 @@ chart.prototype.doResize = function(w, h) {
     // optimization: resize already done, event misfire
     if( this.new_width === w && this.new_height === h ) {
         return;
+    }
+
+    if( w < 500 ) {
+        for( var s in this.e.arcs ) {
+            this.e.arcs[s].hide();
+        }
+        for( var s in this.e.arclabels ) {
+            this.e.arclabels[s].hide();
+        }
+    } else {
+        for( var s in this.e.arcs ) {
+            this.e.arcs[s].show();
+        }
+        for( var s in this.e.arclabels ) {
+            this.e.arclabels[s].show();
+        }
     }
 
     // resize raphael canvas
