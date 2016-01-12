@@ -113,6 +113,11 @@ function chart() {
 
     // used to halt events during longer animations
     this.busy = false;
+    this.a_country_is_highlighted = {
+        state: false,
+        handler_on: null,
+        handler_off: null
+    };
 
     this.styles = {
         block: {
@@ -201,10 +206,8 @@ chart.prototype.computeGradient = function() {
 
         var country_blocks = that.filterCountry(country);
         for( var i = 0; i < country_blocks.length; i++) {
-            // console.info( country_blocks[i]);
             country_blocks[i].e.attr({ "fill": "#" + rainbow.colorAt(country_blocks[i].count) });
         }
-        //console.info( country );
 
     })(country, this.range_y[country], counter++);
 }
@@ -254,7 +257,31 @@ chart.prototype.filterCountry = function(country) {
 }
 
 // TODO: consolidate mouseout/mouseover events
-chart.prototype.highlightCountry = function() {
+chart.prototype.highlightCountry = function(that, point, is_on) {
+
+    if( is_on === true ) {
+        that.displayCountryText(point);
+
+        that.e.labels.selected_country.show();
+        that.e.labels.selected_country_counts.show();
+        that.e.labels.selected_country_counts2.show();
+    } else {
+        that.e.labels.selected_country.hide();
+        that.e.labels.selected_country_counts.hide();
+        that.e.labels.selected_country_counts2.hide();
+    }
+
+    var x = that.filterCountry(point.country);
+    for( var i = 0; i < x.length; i++ ) {
+        // x[i].e.attr({fill: "white", stroke: "black"});
+        // x[i].e.stop().animate({fill: "white", stroke: "black"}, 300, "<>");
+
+        if( is_on === true ) {
+            x[i].e.stop().animate(that.styles.block.on, 300, "<>");
+        } else {
+            x[i].e.stop().animate(that.styles.block.off, 100, "<>");
+        }
+    }
 
 }
 
@@ -315,9 +342,16 @@ chart.prototype.plotBlock = function(point) {
     e.mouseover(function() {
         if( that.busy === true ) return;
 
-        that.displayCountryText(point);
+        // if something is currently "highlighted", reapply the effect
+        if( that.a_country_is_highlighted.state === true ) {
+            that.a_country_is_highlighted.handler_off();
+        }
 
-        var x = that.filterCountry(point.country);
+        // moved to highlight routine
+        // that.displayCountryText(point);
+        that.highlightCountry(that, point, true);
+
+        /*var x = that.filterCountry(point.country);
         for( var i = 0; i < x.length; i++ ) {
             // x[i].e.attr({fill: "crimson", stroke: "crimson"});
             // x[i].e.toFront().stop().animate({fill: "orange", stroke: "orange"}, 300, "<>");
@@ -325,38 +359,57 @@ chart.prototype.plotBlock = function(point) {
             // ie toFront() - mouseout bug?
             // x[i].e.toFront().stop().animate(that.styles.block.on, 300, "<>");
             x[i].e.stop().animate(that.styles.block.on, 300, "<>");
-        }
+        }*/
     });
 
     e.mouseout(function() {
         if( that.busy === true ) return;
 
-        that.e.labels.selected_country.hide();
-        that.e.labels.selected_country_counts.hide();
-        that.e.labels.selected_country_counts2.hide();
-        var x = that.filterCountry(point.country);
-        for( var i = 0; i < x.length; i++ ) {
-            // x[i].e.attr({fill: "white", stroke: "black"});
-            // x[i].e.stop().animate({fill: "white", stroke: "black"}, 300, "<>");
-            x[i].e.stop().animate(that.styles.block.off, 100, "<>");
+        that.highlightCountry(that, point, false);
+
+        if( that.a_country_is_highlighted.state === true ) {
+            that.a_country_is_highlighted.handler_on();
         }
+
     });
 
     e.click(function() {
         if( that.busy === true ) return;
 
-        // experimental event
-        that.sortYearsByCountry(point.country, function() {
-            that.e.labels.selected_country.hide();
-            that.e.labels.selected_country_counts.hide();
-            that.e.labels.selected_country_counts2.hide();
+        // was a previous country highlighted?  if so, unhighlight it
+        if( that.a_country_is_highlighted.state === true ) {
+            that.a_country_is_highlighted.handler_off();
+        }
 
-            var x = that.filterCountry(point.country);
-            for( var i = 0; i < x.length; i++ ) {
-                // x[i].e.attr({fill: "white", stroke: "black"});
-                // x[i].e.stop().animate({fill: "white", stroke: "black"}, 300, "<>");
-                x[i].e.stop().animate(that.styles.block.off, 100, "<>");
+        // now "highlight" this one
+        that.a_country_is_highlighted = {
+            state: true,
+            handler_on: function() {
+                that.highlightCountry(that, point, true);
+            },
+            handler_off: function() {
+                that.highlightCountry(that, point, false);
+                //that.a_country_is_highlighted = { state: false, handler_on: null, handler_off: null };
             }
+        }
+
+        // experimental event
+        that.sortYearsByCountry(point.country, function(sorted_item) {
+
+            // inefficient repetition, but does show the text
+            // that.highlightCountry(that, point, true);
+
+            // or ... more direct
+            that.displayCountryText(point);
+            //that.highlightCountry(that, point.country, false);
+
+            // store recomputed geometries
+            //this.storeOriginalGeometryBlock(sorted[b].e);
+
+            /////////////////// no, the fix needs to be in the sorting f
+            ///////////////////that.storeOriginalGeometryBlock(sorted_item.e);
+            //console.info( sorted_item);
+
         });
     });
     //e.attr({ opacity: 0});
@@ -515,7 +568,7 @@ chart.prototype.plotArizona = function() {
     var radius = 50;
     this.e.circle_state = paper.path().attr( this.styles.chart_arc );
     this.e.circle_state.attr({arc: [90, 100, radius, 100, 200]});
-*/
+    */
     //var sec = paper.path().attr(param).attr({arc: [30, 60, R]}).attr({transform:"r90"});
 
 }
@@ -574,24 +627,40 @@ chart.prototype.sortYearsByCountry = function(country, after_animation) {
 
         // reposition rects based on sort order
         var offset = 0;
-        for( var b = 0; b < sorted.length; b++ ) {
+        for( var b = 0; b < sorted.length; b++ )(function(block_to_sort) {
+            var temp_h = block_to_sort.e.__should_be_height;
+            that.busy = true;
+            var logical_y = that.height - that.padding.bottom - offset - temp_h;
+            var new_y = that.doResizeHelper(logical_y, that.height, that.new_height);
+
+            // replace geometry y with new y
+            block_to_sort.e.__geometry.oy = logical_y;
+
+            block_to_sort.e.animate({ y: new_y}, 300, "<>", function() {
+                that.busy = false;
+                after_animation(block_to_sort);
+            });
+            offset += temp_h;
+
+        })(sorted[b]);
 
             //var new_y = sorted[b].e.attr("height");
             // var temp_h = sorted[b].e.attr("height");
-            var temp_h = sorted[b].e.__should_be_height;
+//            var temp_h = sorted[b].e.__should_be_height;
 
-            that.busy = true;
+//            that.busy = true;
             // sorted[b].e.attr("y", this.height - this.padding.bottom - offset - temp_h);
             // sorted[b].e.animate({ y: this.height - this.padding.bottom - offset - temp_h}, 300, "<>", function() {
-            var new_y = that.doResizeHelper(this.height - this.padding.bottom - offset - temp_h, this.height, this.new_height);
-            // this.storeOriginalGeometryBlock(sorted[b].e);
+//            var new_y = that.doResizeHelper(this.height - this.padding.bottom - offset - temp_h, this.height, this.new_height);
 
-            sorted[b].e.animate({ y: new_y}, 300, "<>", function() {
-                that.busy = false;
-                after_animation();
-            });
-            offset += temp_h;
-        }
+//            var send_sorted_item = sorted[b];
+
+//            sorted[b].e.animate({ y: new_y}, 300, "<>", function() {
+//                that.busy = false;
+//                after_animation(send_sorted_item);
+//            });
+//            offset += temp_h;
+        //}
     }
 }
 
@@ -674,7 +743,7 @@ arizona.computeMax();
 arizona.plotAll();
 arizona.plotLabels();
 arizona.plotArizona();
-arizona.computeGradient();
+// arizona.computeGradient();
 
 // pre-sorted in the datastream
 // arizona.sortYearsBySize();
