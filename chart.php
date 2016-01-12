@@ -256,7 +256,6 @@ chart.prototype.filterCountry = function(country) {
     return( r );
 }
 
-// TODO: consolidate mouseout/mouseover events
 chart.prototype.highlightCountry = function(that, point, is_on) {
 
     if( is_on === true ) {
@@ -273,9 +272,6 @@ chart.prototype.highlightCountry = function(that, point, is_on) {
 
     var x = that.filterCountry(point.country);
     for( var i = 0; i < x.length; i++ ) {
-        // x[i].e.attr({fill: "white", stroke: "black"});
-        // x[i].e.stop().animate({fill: "white", stroke: "black"}, 300, "<>");
-
         if( is_on === true ) {
             x[i].e.stop().animate(that.styles.block.on, 300, "<>");
         } else {
@@ -303,10 +299,18 @@ chart.prototype.displayCountryText = function(point) {
         delim = "\n";
     }
 
-    this.e.labels.selected_country_counts.attr("text", this.comma(point.count) + " refugees admitted" + delim + "to Arizona in " + point.year);
+    this.e.labels.selected_country_counts.attr(
+        "text",
+        this.comma(point.count) + " refugees admitted" +
+        delim + "to Arizona in " + point.year
+    );
     this.e.labels.selected_country_counts.toFront().show();
 
-    this.e.labels.selected_country_counts2.attr("text", this.comma(this.countFromCountry(point.country)) + " refugees admitted" + delim + "2002-2015");
+    this.e.labels.selected_country_counts2.attr(
+        "text",
+        this.comma(this.countFromCountry(point.country)) +
+        " refugees admitted" + delim + "2002-2015"
+    );
     this.e.labels.selected_country_counts2.toFront().show();
 
 }
@@ -325,7 +329,6 @@ chart.prototype.plotBlock = function(point) {
     // y is inverted because graph starts from bottom
     var bottom = this.height - this.padding.bottom;
     var y = bottom - h - this.range_x[point.year].current;
-    // var y = this.padding.top + (this.height - this.padding2) - h - this.range_x[point.year].current;
 
     this.range_x[point.year].current += h;
 
@@ -333,8 +336,6 @@ chart.prototype.plotBlock = function(point) {
     var column_margin = 8;
     var e = paper.rect( x + column_margin, y, w - (column_margin * 2), h);
     e.__should_be_height = h;
-    // var e = paper.rect( x, y, w, h);
-    // e.attr( { "stroke-width": 0.5, "fill": "white"});
     e.attr( this.styles.block.off );
 
     var that = this;
@@ -350,16 +351,6 @@ chart.prototype.plotBlock = function(point) {
         // moved to highlight routine
         // that.displayCountryText(point);
         that.highlightCountry(that, point, true);
-
-        /*var x = that.filterCountry(point.country);
-        for( var i = 0; i < x.length; i++ ) {
-            // x[i].e.attr({fill: "crimson", stroke: "crimson"});
-            // x[i].e.toFront().stop().animate({fill: "orange", stroke: "orange"}, 300, "<>");
-
-            // ie toFront() - mouseout bug?
-            // x[i].e.toFront().stop().animate(that.styles.block.on, 300, "<>");
-            x[i].e.stop().animate(that.styles.block.on, 300, "<>");
-        }*/
     });
 
     e.mouseout(function() {
@@ -389,37 +380,16 @@ chart.prototype.plotBlock = function(point) {
             },
             handler_off: function() {
                 that.highlightCountry(that, point, false);
-                //that.a_country_is_highlighted = { state: false, handler_on: null, handler_off: null };
             }
         }
 
         // experimental event
         that.sortYearsByCountry(point.country, function(sorted_item) {
-
-            // inefficient repetition, but does show the text
-            // that.highlightCountry(that, point, true);
-
-            // or ... more direct
             that.displayCountryText(point);
-            //that.highlightCountry(that, point.country, false);
-
-            // store recomputed geometries
-            //this.storeOriginalGeometryBlock(sorted[b].e);
-
-            /////////////////// no, the fix needs to be in the sorting f
-            ///////////////////that.storeOriginalGeometryBlock(sorted_item.e);
-            //console.info( sorted_item);
-
         });
     });
-    //e.attr({ opacity: 0});
-
-    //var x = Raphael.animation( { opacity: 1 }, 300);
-    //e.animate({ opacity: 1}, 500, "<>").delay(100);
-    //e.animate(x.delay(500 + (100 * i)));
 
     point.e = e;
-    //e.attr({ fill: "#" + this.rainbow.colourAt(point.count) } );
 
     this.storeOriginalGeometryBlock(e);
     this.e.blocks.push(e);
@@ -461,7 +431,6 @@ chart.prototype.plotLabels = function() {
     // y is inverted because graph starts from bottom
     var bottom = this.height - this.padding.bottom;
     var rightmost = this.width - this.padding.right;
-    //var y = bottom - h - this.range_x[point.year].current;
 
     for( var year in this.range_x ) {
         var i = year - 2002;
@@ -520,7 +489,6 @@ chart.prototype.plotArizona = function() {
         temp.attr({ arc: [a - cushion, b, radius, anchor_x, anchor_y]});
         temp.attr({transform: "R" + parseInt(delta) + "," + anchor_x + "," + anchor_y });
 
-        // delta += (d + 3);
         delta += (d );
 
         var b = temp.getBBox();
@@ -533,13 +501,6 @@ chart.prototype.plotArizona = function() {
         }
 
         var data = point;
-        /*
-        temp.mouseover(function() {
-            this.attr(that.styles.chart_arc_on);
-        });
-        temp.mouseout(function() {
-            this.attr(that.styles.chart_arc);
-        });*/
 
         var temp3 = paper.set();
         temp3.push( temp );
@@ -560,17 +521,6 @@ chart.prototype.plotArizona = function() {
         that.e.arcs.push(temp);
 
     })(data_usa.top_states[i], i);
-
-    /*
-    this.e.circle_state = paper.path().attr( this.styles.chart_arc );
-    this.e.circle_state.attr({arc: [10, 100, radius, 100, 100]});
-
-    var radius = 50;
-    this.e.circle_state = paper.path().attr( this.styles.chart_arc );
-    this.e.circle_state.attr({arc: [90, 100, radius, 100, 200]});
-    */
-    //var sec = paper.path().attr(param).attr({arc: [30, 60, R]}).attr({transform:"r90"});
-
 }
 
 // sorts smallest to largest
@@ -605,8 +555,6 @@ chart.prototype.sortYearsBySize = function() {
         var offset = 0;
         for( var b = 0; b < sorted.length; b++ ) {
 
-            //var new_y = sorted[b].e.attr("height");
-            // var temp_h = sorted[b].e.attr("height");
             var temp_h = sorted[b].e.__should_be_height;
 
             sorted[b].e.attr("y", this.height - this.padding.bottom - offset - temp_h);
@@ -633,7 +581,7 @@ chart.prototype.sortYearsByCountry = function(country, after_animation) {
             var logical_y = that.height - that.padding.bottom - offset - temp_h;
             var new_y = that.doResizeHelper(logical_y, that.height, that.new_height);
 
-            // replace geometry y with new y
+            // replace geometry y with logical_y
             block_to_sort.e.__geometry.oy = logical_y;
 
             block_to_sort.e.animate({ y: new_y}, 300, "<>", function() {
@@ -643,24 +591,6 @@ chart.prototype.sortYearsByCountry = function(country, after_animation) {
             offset += temp_h;
 
         })(sorted[b]);
-
-            //var new_y = sorted[b].e.attr("height");
-            // var temp_h = sorted[b].e.attr("height");
-//            var temp_h = sorted[b].e.__should_be_height;
-
-//            that.busy = true;
-            // sorted[b].e.attr("y", this.height - this.padding.bottom - offset - temp_h);
-            // sorted[b].e.animate({ y: this.height - this.padding.bottom - offset - temp_h}, 300, "<>", function() {
-//            var new_y = that.doResizeHelper(this.height - this.padding.bottom - offset - temp_h, this.height, this.new_height);
-
-//            var send_sorted_item = sorted[b];
-
-//            sorted[b].e.animate({ y: new_y}, 300, "<>", function() {
-//                that.busy = false;
-//                after_animation(send_sorted_item);
-//            });
-//            offset += temp_h;
-        //}
     }
 }
 
@@ -678,12 +608,6 @@ chart.prototype.doResize = function(w, h) {
 
     // resize raphael canvas
     paper.setSize(w,h);
-
-    // scaling helper
-    // function ns(x,x1,x2, p) {
-    //     return((x * x2) / x1);
-    // }
-
     var that = this;
 
     // blocks
@@ -697,10 +621,6 @@ chart.prototype.doResize = function(w, h) {
     })(this.e.blocks[i]);
 
     for( var s in this.e.labels)(function(label) {
-        //     label.hide();
-        // } else {
-        //     label.show();
-
         label.attr({
             x: that.doResizeHelper(label.__geometry.ox, that.width, w),
             y: that.doResizeHelper(label.__geometry.oy, that.height, h)
@@ -762,10 +682,7 @@ function resizePaper(){
         w = document.documentElement.clientWidth;
         h = document.documentElement.clientHeight;
     }
-    // paper.changeSize(w, h, true, false);
-
     arizona.doResize(w,h);
-    //arizona.plotAll();
 }
 resizePaper();
 windowAddEvent("resize", resizePaper, false);
