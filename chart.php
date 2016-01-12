@@ -3,7 +3,7 @@
 <head>
 <title>Refugees in Arizona 2002-2015</title>
 <style>
-body, html { width:100%; height:100%; padding:0; margin:0; overflow: hidden; background-color: silver }
+body, html { width:100%; height:100%; padding:0; margin:0; overflow: hidden; background-color: #FDFDFD }
 .container { /* padding: 25px */ }
 #chart_div { background-color: #FDFDFD }
 
@@ -130,12 +130,12 @@ function chart() {
             selected_country: { "font-family": "Arial", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "#333333" },
             selected_country_counts: { "font-family": "Arial", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "#555555" }
         },
-        chart_arc: { stroke: "#7FDBFF", "stroke-width": 20 },
+        chart_arc: { stroke: "#DDDDDD", "stroke-width": 20 },
         chart_arc_az: { stroke: "#39CCCC", "stroke-width": 20 },
         chart_arc_on: { stroke: "#AAAAAA", "stroke-width": 20 },
-        chart_arc_label: { "font-family": "Arial", "font-size": "14", "fill": "#555555" },
+        chart_arc_label: { "font-family": "Arial", "font-size": "14", "fill": "#333333" },
         chart_arc_label_important: { "font-family": "Arial", "font-size": "14", "fill": "#333333", "font-weight": "bold" },
-        chart_arc_label_arc: { "font-family": "Arial", "font-size": "14", "fill": "#555555" }
+        chart_arc_label_arc: { "font-family": "Arial", "font-size": "14", "fill": "#333333" }
     };
 }
 
@@ -421,7 +421,7 @@ chart.prototype.plotLabels = function() {
 
     // y is inverted because graph starts from bottom
     var bottom = this.height - this.padding.bottom;
-    var rightmost = this.width - this.padding.right;
+    var rightmost = this.width - this.padding.right - 8; // 8 = column margin
 
     for( var year in this.range_x ) {
         var i = year - 2002;
@@ -461,9 +461,9 @@ chart.prototype.plotArizona = function() {
     var anchor_x = 125;
     var anchor_y = 100;
 
-    this.e.labels.arc_center_label = paper.text(anchor_x + 45, anchor_y, "");
-    this.e.labels.arc_center_label.attr( this.styles.chart_arc_label_arc );
-    this.storeOriginalGeometryLabel(this.e.labels.arc_center_label, "arc");
+    var arc_center_label = paper.text(anchor_x, anchor_y, "");
+    arc_center_label.attr( this.styles.chart_arc_label_arc );
+    //this.storeOriginalGeometryLabel(this.e.labels.arc_center_label, "arc");
 
     for( var i = 0; i < data_usa.top_states.length; i++)(function(point, i) {
 
@@ -501,14 +501,14 @@ chart.prototype.plotArizona = function() {
 
         temp3.mouseover(function() {
             temp.attr(that.styles.chart_arc_on);
-            that.e.labels.arc_center_label.attr("text", that.comma(point.individuals)  + "\nRefugees" );
+            arc_center_label.attr("text", that.comma(point.individuals)  + "\nRefugees" );
         }).mouseout(function() {
             if( i == 6 ) {
                 temp.attr(that.styles.chart_arc_az);
             } else {
                 temp.attr(that.styles.chart_arc);
             }
-            that.e.labels.arc_center_label.attr("text", "" );
+            arc_center_label.attr("text", "" );
         });
 
         that.e.arcs.push(temp);
@@ -651,7 +651,7 @@ var arizona = new chart();
 arizona.setWidth(chart_w);
 arizona.setHeight(chart_h);
 arizona.setPadding({
-    top: 10, bottom: 40, left: 10, right: 10
+    top: 10, bottom: 40, left: -5, right: -5
 });
 
 for( var i = 0; i < data.length; i++ ) {
