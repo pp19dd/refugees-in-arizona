@@ -5,7 +5,7 @@
 <style>
 body, html { width:100%; height:100%; padding:0; margin:0; overflow: hidden; background-color: silver }
 .container { /* padding: 25px */ }
-#chart_div { background-color: white }
+#chart_div { background-color: #FDFDFD }
 
 /*
 @media screen and (max-width:700px) {
@@ -126,16 +126,16 @@ function chart() {
             off: { "stroke-width": 1, "fill": "silver", "stroke": "gray", "cursor": "pointer" }
         },
         labels: {
-            years: { "font-family": "Arial", "font-size": "15", "font-weight": "bold", "fill": "black" },
-            selected_country: { "font-family": "Arial", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "black" },
-            selected_country_counts: { "font-family": "Arial", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "gray" }
+            years: { "font-family": "Arial", "font-size": "15", "font-weight": "bold", "fill": "#333333" },
+            selected_country: { "font-family": "Arial", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "#333333" },
+            selected_country_counts: { "font-family": "Arial", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "#555555" }
         },
         chart_arc: { stroke: "#9bbfa9", "stroke-width": 20 },
         chart_arc_az: { stroke: "#677f70", "stroke-width": 20 },
         chart_arc_on: { stroke: "#00ce00", "stroke-width": 20 },
-        chart_arc_label: { "font-family": "Arial", "font-size": "14", "fill": "gray" },
-        chart_arc_label_important: { "font-family": "Arial", "font-size": "14", "fill": "black", "font-weight": "bold" },
-        chart_arc_label_arc: { "font-family": "Arial", "font-size": "14", "fill": "gray" }
+        chart_arc_label: { "font-family": "Arial", "font-size": "14", "fill": "#555555" },
+        chart_arc_label_important: { "font-family": "Arial", "font-size": "14", "fill": "#333333", "font-weight": "bold" },
+        chart_arc_label_arc: { "font-family": "Arial", "font-size": "14", "fill": "#555555" }
     };
 }
 
