@@ -122,17 +122,17 @@ function chart() {
 
     this.styles = {
         block: {
-            on: { "stroke-width": 1, "fill": "#677f70", "stroke": "gray", "cursor": "auto" },
-            off: { "stroke-width": 1, "fill": "silver", "stroke": "gray", "cursor": "pointer" }
+            on: { "stroke-width": 1, "fill": "#111111", "stroke": "#222222", "cursor": "auto" },
+            off: { "stroke-width": 1, "fill": "silver", "stroke": "#222222", "cursor": "pointer" }
         },
         labels: {
             years: { "font-family": "Arial", "font-size": "15", "font-weight": "bold", "fill": "#333333" },
             selected_country: { "font-family": "Arial", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "#333333" },
             selected_country_counts: { "font-family": "Arial", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "#555555" }
         },
-        chart_arc: { stroke: "#9bbfa9", "stroke-width": 20 },
-        chart_arc_az: { stroke: "#677f70", "stroke-width": 20 },
-        chart_arc_on: { stroke: "#00ce00", "stroke-width": 20 },
+        chart_arc: { stroke: "#7FDBFF", "stroke-width": 20 },
+        chart_arc_az: { stroke: "#39CCCC", "stroke-width": 20 },
+        chart_arc_on: { stroke: "#AAAAAA", "stroke-width": 20 },
         chart_arc_label: { "font-family": "Arial", "font-size": "14", "fill": "#555555" },
         chart_arc_label_important: { "font-family": "Arial", "font-size": "14", "fill": "#333333", "font-weight": "bold" },
         chart_arc_label_arc: { "font-family": "Arial", "font-size": "14", "fill": "#555555" }
@@ -187,30 +187,19 @@ chart.prototype.computeGradient = function() {
     // this.rainbow.setSpectrum("#ff0000", "#000000");
     var that = this;
 
-    var counter = 0;
-
-    var available_colors = [
-        "#FF1873", "#0DFFF2", "#FFCD19", "#A757AB", "#7CFF82", "#FF5D51", "#38C6E2",
-        "#EBFF13", "#37FFC7"
-    ];
+    var rainbow = new Rainbow();
+    rainbow.setNumberRange(0, this.max_x);
+    rainbow.setSpectrum("#AAAAAA", "#FF851B", "#FF4136");
 
     for( var country in this.range_y )(function(country, data, counter) {
-        var rainbow = new Rainbow();
-        rainbow.setNumberRange(0, data.max);
-
-        // todo: add 62 more color ranges
-        if( typeof available_colors[63-counter] == "undefined" ) {
-            rainbow.setSpectrum("#000000", "#ff0000");
-        } else {
-            rainbow.setSpectrum("#000000", available_colors[63-counter]);
-        }
 
         var country_blocks = that.filterCountry(country);
         for( var i = 0; i < country_blocks.length; i++) {
-            country_blocks[i].e.attr({ "fill": "#" + rainbow.colorAt(country_blocks[i].count) });
+            country_blocks[i].e.__intended_fill = "#" + rainbow.colorAt(data.sum);
+            country_blocks[i].e.attr({ "fill": country_blocks[i].e.__intended_fill });
         }
 
-    })(country, this.range_y[country], counter++);
+    })(country, this.range_y[country]);
 }
 
 chart.prototype.add = function(country, year, count) {
@@ -276,7 +265,8 @@ chart.prototype.highlightCountry = function(that, point, is_on) {
         if( is_on === true ) {
             x[i].e.stop().animate(that.styles.block.on, 300, "<>");
         } else {
-            x[i].e.stop().animate(that.styles.block.off, 100, "<>");
+            // x[i].e.stop().animate(that.styles.block.off, 100, "<>");
+            x[i].e.stop().animate({"fill": x[i].e.__intended_fill}, 100, "<>");
         }
     }
 
@@ -682,7 +672,7 @@ arizona.computeMax();
 arizona.plotAll();
 arizona.plotLabels();
 arizona.plotArizona();
-// arizona.computeGradient();
+arizona.computeGradient();
 
 // pre-sorted in the datastream
 // arizona.sortYearsBySize();
