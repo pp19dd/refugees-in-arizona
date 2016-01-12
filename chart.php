@@ -122,13 +122,13 @@ function chart() {
 
     this.styles = {
         block: {
-            on: { "stroke-width": 1, "fill": "#111111", "stroke": "#222222", "cursor": "auto" },
-            off: { "stroke-width": 1, "fill": "silver", "stroke": "#222222", "cursor": "pointer" }
+            on: { "stroke-width": 1, "fill": "#111111", "stroke": "#222222", "cursor": "auto"},
+            off: { "stroke-width": 1, "fill": "silver", "stroke": "#222222", "cursor": "pointer"}
         },
         labels: {
-            years: { "font-family": "Arial", "font-size": "15", "font-weight": "bold", "fill": "#333333" },
-            selected_country: { "font-family": "Arial", "text-anchor": "end", "font-size": "25", "font-weight": "bold", "fill": "#333333" },
-            selected_country_counts: { "font-family": "Arial", "text-anchor": "end", "font-size": "15", "font-weight": "bold", "fill": "#555555" }
+            years: { "font-family": "Arial", "font-size": "13", "fill": "#333333" },
+            selected_country: { "font-family": "Arial", "text-anchor": "end", "font-size": "25", "fill": "#333333" },
+            selected_country_counts: { "font-family": "Arial", "text-anchor": "end", "font-size": "13", "fill": "#555555" }
         },
         chart_arc: { stroke: "#DDDDDD", "stroke-width": 20 },
         chart_arc_az: { stroke: "#39CCCC", "stroke-width": 20 },
@@ -204,12 +204,12 @@ chart.prototype.computeGradient = function() {
 
 chart.prototype.add = function(country, year, count) {
     if( typeof this.range_x[year] == "undefined" ) {
-        this.range_x[year] = { min: Infinity, max: 0, sum: 0, current: 0 }
+        this.range_x[year] = { min: Infinity, max: 0, sum: 0, current: 0, current_stage2: 0 }
         this.count_x++;
     };
 
     if( typeof this.range_y[country] == "undefined" ) {
-        this.range_y[country] = { min: Infinity, max: 0, sum: 0, current:0 };
+        this.range_y[country] = { min: Infinity, max: 0, sum: 0, current:0, current_stage2: 0 };
         this.count_y++;
     }
 
@@ -266,7 +266,7 @@ chart.prototype.highlightCountry = function(that, point, is_on) {
             x[i].e.stop().animate(that.styles.block.on, 300, "<>");
         } else {
             // x[i].e.stop().animate(that.styles.block.off, 100, "<>");
-            x[i].e.stop().animate({"fill": x[i].e.__intended_fill}, 100, "<>");
+            x[i].e.stop().animate(that.styles.block.off, 100, "<>").animate({"fill": x[i].e.__intended_fill}, 100, "<>");
         }
     }
 
@@ -312,23 +312,36 @@ chart.prototype.plotBlock = function(point) {
     var ph = this.padding.left + this.padding.right;
     var pv = this.padding.top + this.padding.bottom;
 
+    // chart pushed down by arc
+    var stage_2 = {
+        pv: 170 + pv,
+        h: 0, // tbd
+        y: 0  // tbd
+    }
+
     var i = point.year - 2002;
     var w = ((this.width - ph) / this.count_x);
     var h = ((this.height - pv) / this.max_y) * point.count;
+    stage_2.h = ((this.height - stage_2.pv) / this.max_y) * point.count;
+
     var x = this.padding.left + (w * i);
 
     // y is inverted because graph starts from bottom
     var bottom = this.height - this.padding.bottom;
     var y = bottom - h - this.range_x[point.year].current;
 
-    this.range_x[point.year].current += h;
+    stage_2.y = bottom - stage_2.h - this.range_x[point.year].current_stage2;
 
+    this.range_x[point.year].current += h;
+    this.range_x[point.year].current_stage2 += stage_2.h;
 
     var column_margin = 8;
     var e = paper.rect( x + column_margin, y, w - (column_margin * 2), h);
     e.__should_be_height = h;
-    e.attr( this.styles.block.off );
+    e.__should_be_height_stage_2 = stage_2.h;
 
+    e.attr( this.styles.block.off );
+    e.__stage_2 = stage_2;
     var that = this;
 
     e.mouseover(function() {
@@ -538,6 +551,7 @@ chart.prototype.sortCountry = function(objects, country) {
     return( sorted );
 }
 
+// unused
 chart.prototype.sortYearsBySize = function() {
     for( year in this.range_x ) {
         // sort year
@@ -570,6 +584,10 @@ chart.prototype.sortYearsByCountry = function(country, after_animation) {
         var offset = 0;
         for( var b = 0; b < sorted.length; b++ )(function(block_to_sort) {
             var temp_h = block_to_sort.e.__should_be_height;
+            if( that.new_width < 500 ) {
+                temp_h = block_to_sort.e.__should_be_height_stage_2;
+            }
+
             that.busy = true;
             var logical_y = that.height - that.padding.bottom - offset - temp_h;
             var new_y = that.doResizeHelper(logical_y, that.height, that.new_height);
@@ -591,6 +609,17 @@ chart.prototype.doResizeHelper = function(x, x1, x2, p) {
     return((x * x2) / x1);
 }
 
+// hideall
+chart.prototype.toggleAll = function(a, should_show) {
+    for( var s in a ) {
+        if( should_show ) {
+            a[s].show();
+        } else {
+            a[s].hide();
+        }
+    }
+}
+
 // resize blocks, labels and arcs
 chart.prototype.doResize = function(w, h) {
 
@@ -598,35 +627,38 @@ chart.prototype.doResize = function(w, h) {
     if( this.new_width === w && this.new_height === h ) {
         return;
     }
-
+/*
     if( w < 500 ) {
-        for( var s in this.e.arcs ) {
-            this.e.arcs[s].hide();
-        }
-        for( var s in this.e.arclabels ) {
-            this.e.arclabels[s].hide();
-        }
+        this.toggleAll(this.e.arcs, false);
+        this.toggleAll(this.e.arclabels, false);
     } else {
-        for( var s in this.e.arcs ) {
-            this.e.arcs[s].show();
-        }
-        for( var s in this.e.arclabels ) {
-            this.e.arclabels[s].show();
-        }
+        this.toggleAll(this.e.arcs, true);
+        this.toggleAll(this.e.arclabels, true);
     }
-
+*/
     // resize raphael canvas
     paper.setSize(w,h);
     var that = this;
 
     // blocks
     for( var i = 0; i < this.e.blocks.length; i++ )(function(block) {
-        block.attr({
-            x: that.doResizeHelper(block.__geometry.ox, that.width, w),//x: (w * 500) / block.__geometry.ox,
-            y: that.doResizeHelper(block.__geometry.oy, that.height, h, "block"),
-            width: that.doResizeHelper(block.__geometry.ow, that.width, w),
-            height: that.doResizeHelper(block.__geometry.oh, that.height, h, "block")
-        });
+        if( w < 500 ) {
+            block.attr({
+                x: that.doResizeHelper(block.__geometry.ox, that.width, w),//x: (w * 500) / block.__geometry.ox,
+                //y: that.doResizeHelper(block.__geometry.oy, that.height, h, "block"),
+                y: that.doResizeHelper(block.__stage_2.y, that.height, h, "block"),
+                width: that.doResizeHelper(block.__geometry.ow, that.width, w),
+                //height: that.doResizeHelper(block.__geometry.oh, that.height, h, "block")
+                height: that.doResizeHelper(block.__stage_2.h, that.height, h, "block"),
+            });
+        } else {
+            block.attr({
+                x: that.doResizeHelper(block.__geometry.ox, that.width, w),//x: (w * 500) / block.__geometry.ox,
+                y: that.doResizeHelper(block.__geometry.oy, that.height, h, "block"),
+                width: that.doResizeHelper(block.__geometry.ow, that.width, w),
+                height: that.doResizeHelper(block.__geometry.oh, that.height, h, "block")
+            });
+        }
     })(this.e.blocks[i]);
 
     for( var s in this.e.labels)(function(label) {
