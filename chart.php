@@ -13,15 +13,23 @@ body, html { width:100%; height:100%; padding:0; margin:0; overflow: hidden; bac
 }
 */
 </style>
+<?php if( defined("include_js_inline")) { ?>
+<script type="text/javascript">
+<?php
+readfile("raphael-min.js");
+readfile("rainbowvis.js");
+?>
+</script>
+<?php } else { ?>
 <script src="raphael-min.js"></script>
-<script src="scale.raphael.js"></script>
 <script src="rainbowvis.js"></script>
+<?php } ?>
 </head>
 <body>
     <div class="container">
         <div id="chart_div"></div>
     </div>
-<script>
+<script type="text/javascript">
 // defined by container
 var chart_w = <?php echo $canvas_w ?>;
 var chart_h = <?php echo $canvas_h ?>;
